@@ -533,11 +533,14 @@ class api {
                                       SELECT m.conversationid, MAX(m.timecreated) as maxtime
                                         FROM {messages} m
                                   INNER JOIN {message_conversation_members} mcm
-                                          ON mcm.conversationid = m.conversationid
-                                   LEFT JOIN {message_user_actions} mua
-                                          ON (mua.messageid = m.id AND mua.userid = :userid AND mua.action = :action)
-                                       WHERE mua.id is NULL
-                                         AND mcm.userid = :userid2
+                                          ON mcm.conversationid = m.conversationid AND mcm.userid = :userid2
+                                       WHERE NOT EXISTS (
+                                                 SELECT 1
+                                                   FROM {message_user_actions} mua
+                                                  WHERE mua.messageid = m.id
+                                                    AND mua.userid = :userid
+                                                    AND mua.action = :action
+                                             )
                                     GROUP BY m.conversationid
                                  ) maxmessage
                                ON maxmessage.maxtime = m.timecreated AND maxmessage.conversationid = m.conversationid
